@@ -56,6 +56,7 @@ project/
 ---
 
 ##　🎥 デモ動画 📸
+
 [![ゲームデモ](kuma_gekitai_demo.png)](kuma_gekitai_demo.mp4)
 
 ---
