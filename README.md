@@ -35,8 +35,8 @@ Python / PyScript の学習目的で作成しました。
 ```
 project/
 ├── index.html
-├── png
-└── README.md
+├── README.md
+└── png...
 ```
 
 ---
@@ -58,6 +58,12 @@ project/
 ## 🎥 デモ動画 📸
 
 <a href="kuma_gekitai_demo.mp4">
+  <img src="kuma_gekitai_demo.png" alt="ゲームデモ" width="200">
+</a>
+<a href="kuma_gekitai_demo2.mp4">
+  <img src="kuma_gekitai_demo.png" alt="ゲームデモ" width="200">
+</a>
+<a href="kuma_gekitai_demo3.mp4">
   <img src="kuma_gekitai_demo.png" alt="ゲームデモ" width="200">
 </a>
 
