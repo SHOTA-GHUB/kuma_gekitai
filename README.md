@@ -1,4 +1,4 @@
-# 🌐 くま撃退ゲーム 🐻🎮（Python / JavaScript / HTML / CSS）
+# 🐻くま撃退ゲーム🎮（Python / JavaScript / HTML / CSS）
 
 ## 📘 ゲーム概要 🎯
 - プレイヤーを左右に動かして敵を攻撃、くまがプレイヤーまで迫るとゲームオーバー
