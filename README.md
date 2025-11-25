@@ -67,7 +67,7 @@ project/
 ## 👤 作成者
 - GitHubアカウント：SHOTA-GHUB  
 - 開発期間：2025年11月20日〜21日  
-- GitHub：https://github.com/yourname/java-webapp-portfolio
+- GitHub：https://github.com/SHOTA-GHUB
 
 ---
 
