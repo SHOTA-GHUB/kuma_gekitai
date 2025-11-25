@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>くま撃退ゲーム</title>
+  <link rel="stylesheet" href="https://pyscript.net/releases/2025.10.3/core.css" />
+  <script type="module" src="https://pyscript.net/releases/2025.10.3/core.js"></script>
+  <style>
+  body {
+  margin: 0;
+  background-color: #cceeff;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  height: 100vh;
+  font-family: sans-serif;
+}
+
+.game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 20px;
+}
+
+canvas {
+  border: 2px solid #333;
+  background-color: #fff;
+}
+
+.instructions {
+  text-align: center;
+  font-size: 16px;
+  color: #333;
+}
+
+.instructions ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+</style>
+</head>
+<body>
+<div class="game-container">
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
+
+  <div class="instructions">
+    <h1>操作方法を説明してあげよう</h1>
+    <ul>
+      <li>スペース：銃弾発射</li>
+      <li>← →：プレイヤー移動</li>
+      <li>R：リスタート</li>
+      <li>T：タイトルへ戻る（ゲームオーバー時）</li>
+    </ul>
+  </div>
+</div>
+<py-script>
+from js import document, Image
+from js import Date
+from pyodide.ffi import create_proxy
+from js import window
+
+def save_named_score(name, score):
+    history = window.localStorage.getItem("named_scores")
+    if history:
+        scores = [entry.split(":") for entry in history.split(",")]
+    else:
+        scores = []
+    scores.append([name, str(score)])
+    scores.sort(key=lambda x: int(x[1]), reverse=True)
+    window.localStorage.setItem("named_scores", ",".join(f"{n}:{s}" for n, s in scores[:5]))
+
+import asyncio
+import random
+
+enemy_imgs = []
+for i in range(1, 6):
+    img = Image.new()
+    img.src = f"enemy{i}.png"
+    enemy_imgs.append(img)
+
+player_img = Image.new()
+player_img.src = "player.png"
+
+bullet_img = Image.new()
+bullet_img.src = "bullet.png"
+
+bear_img = Image.new()
+bear_img.src = "bear.png"
+
+bear_loaded = False
+def on_bear_loaded(event):
+    global bear_loaded
+    bear_loaded = True
+
+bear_img.addEventListener("load", create_proxy(on_bear_loaded))
+
+background_imgs = []
+for name in ["backsc1.png", "backsc2.png", "backsc3.png", "backsc4.png", "backsc5.png"]:
+    img = Image.new()
+
+    img.src = name
+    background_imgs.append(img)
+
+def init_clouds():
+    global clouds
+    clouds = []
+    for _ in range(5):
+        x = random.randint(-400, 400)
+        y = random.randint(50, 200)
+        speed = random.uniform(0.2, 1.0)
+        clouds.append({"x": x, "y": y, "speed": speed})
+
+canvas = document.getElementById("gameCanvas")
+ctx = canvas.getContext("2d")
+show_title = True
+clouds = []
+score_history = []
+stage_index = 0
+player_x = 180
+player_y = 550
+bullets = []
+last_shot_time = 0
+enemies = []
+enemy_dx = 2
+enemy_dy = 0.3
+score = 0
+score_saved = False
+game_over = False
+init_clouds()
+
+def spawn_enemies():
+    global enemies
+    enemies = []
+    for _ in range(5):
+        x = random.randint(0, 360)
+        y = random.randint(50, 150)
+        kind = random.randint(0, 4)
+        enemies.append({"x": x, "y": y, "alive": True, "kind": kind})
+
+def draw_enemies():
+    for e in enemies:
+        if e["alive"]:
+            img = enemy_imgs[e["kind"]]
+            ctx.drawImage(img, e["x"], e["y"], 60, 60)
+
+frame_count = 0
+cloud_x = 0
+cloud_img = Image.new()
+cloud_img.src = "cloud.png"
+
+def draw_title():
+    global frame_count, cloud_x
+    ctx.clearRect(0, 0, 400, 600)
+
+    grad = ctx.createLinearGradient(0, 0, 0, 600)
+    grad.addColorStop(0, "#3a8edb")
+    grad.addColorStop(1, "#bdf2c2")
+    ctx.fillStyle = grad
+    ctx.fillRect(0, 0, 400, 600)
+
+    if bear_loaded:
+        ctx.drawImage(bear_img, 120, 200, 160, 160)
+
+    draw_clouds()
+
+    if cloud_loaded:
+        cloud_x = (cloud_x + 0.5) % 400
+        ctx.drawImage(cloud_img, cloud_x - 400, 100, 200, 100)
+        ctx.drawImage(cloud_img, cloud_x, 100, 200, 100)
+    else:
+        ctx.fillStyle = "white"
+        ctx.font = "16px Arial"
+        ctx.fillText("Loading clouds...", 140, 120)
+
+    ctx.shadowColor = "black"
+    ctx.shadowBlur = 10
+    ctx.shadowOffsetX = 4
+    ctx.shadowOffsetY = 4
+    ctx.fillStyle = "brown"
+    ctx.font = "48px Arial"
+    ctx.fillText("くま撃退ゲーム", 10, 200)
+    ctx.shadowColor = "transparent"
+
+    if (frame_count // 30) % 2 == 0:
+        ctx.fillStyle = "black"
+        ctx.font = "20px Arial"
+        ctx.fillText("Press Space to Start", 100, 380)
+
+    ctx.fillStyle = "black"
+    ctx.font = "20px Arial"
+    ctx.fillText("Ranking:", 140, 450)
+    scores = load_named_scores()
+    for i, (name, s) in enumerate(scores[:5]):
+        ctx.fillText(f"{i+1}. {name} - {s}", 120, 500 + i * 20)
+
+    frame_count += 1
+
+cloud_loaded = False
+
+def on_cloud_loaded(event):
+    global cloud_loaded
+    cloud_loaded = True
+
+cloud_img.addEventListener("load", create_proxy(on_cloud_loaded))
+
+def init_clouds():
+    global clouds
+    clouds = []
+    for _ in range(5):
+        x = random.randint(-400, 400)
+        y = random.randint(50, 200)
+        speed = random.uniform(0.2, 1.0)
+        clouds.append({"x": x, "y": y, "speed": speed})
+
+def draw_clouds():
+    global clouds
+    for cloud in clouds:
+        cloud["x"] += cloud["speed"]
+        if cloud["x"] > 400:
+            cloud["x"] = -200
+            cloud["y"] = random.randint(50, 200)
+            cloud["speed"] = random.uniform(0.2, 1.0)
+        if cloud_loaded:
+            ctx.drawImage(cloud_img, cloud["x"], cloud["y"], 200, 100)
+
+def return_to_title():
+    global show_title, bullets, enemies, score, game_over
+    show_title = True
+    bullets = []
+    enemies = []
+    score = 0
+    game_over = False
+    score_saved = False
+
+def draw_background():
+    ctx.drawImage(background_imgs[stage_index], 0, 0, 400, 600)
+
+def advance_stage():
+    global stage_index
+    stage_index = (stage_index + 1) % len(background_imgs)
+
+def draw_player():
+    ctx.drawImage(player_img, player_x, player_y, 55, 60)
+
+def draw_bullets():
+    for b in bullets:
+        ctx.drawImage(bullet_img, b[0], b[1], 10, 20)
+
+def draw_score():
+    ctx.fillStyle = "white"
+    ctx.font = "20px Arial"
+    ctx.fillText(f"Score: {score}", 10, 30)
+
+def draw_game_over():
+    global score_saved
+    global score_history
+    ctx.fillStyle = "red"
+    ctx.font = "40px Arial"
+    ctx.fillText("GAME OVER", 100, 300)
+
+    ctx.fillStyle = "white"
+    ctx.font = "20px Arial"
+    ctx.fillText("R: Restart", 130, 350)
+    ctx.fillText("T: Title", 140, 380)
+
+    if not score_saved:
+        name = window.prompt("名前を入力してね！")
+        if name:
+            save_named_score(name, score)
+        score_saved = True
+
+def draw():
+    ctx.clearRect(0, 0, 400, 600)
+    draw_background()
+
+    draw_player()
+    draw_bullets()
+    draw_enemies()
+    draw_score()
+    if game_over:
+        draw_game_over()
+
+def update_bullets():
+    global bullets
+    bullets = [[x, y - 5] for x, y in bullets if y > 0]
+
+def update_enemies():
+    global enemy_dx, game_over
+    edge_hit = False
+    for e in enemies:
+        if e["alive"]:
+            e["x"] += enemy_dx
+            e["y"] += enemy_dy
+            if e["x"] <= 0 or e["x"] >= 360:
+                edge_hit = True
+            if e["y"] + 40 >= player_y:
+                game_over = True
+    if edge_hit:
+        enemy_dx *= -1
+
+def check_collision():
+    global score
+    for b in bullets:
+        bx, by = b
+        for e in enemies:
+            if e["alive"] and (e["x"] < bx < e["x"] + 40) and (e["y"] < by < e["y"] + 40):
+                e["alive"] = False
+                score += 1
+
+def all_enemies_defeated():
+    return all(not e["alive"] for e in enemies)
+
+def save_score(score):
+    history = window.localStorage.getItem("score_history")
+    if history:
+        scores = [int(s) for s in history.split(",")]
+    else:
+        scores = []
+    scores.append(score)
+    window.localStorage.setItem("score_history", ",".join(str(s) for s in scores))
+
+def load_named_scores():
+    history = window.localStorage.getItem("named_scores")
+    if history:
+        return [entry.split(":") for entry in history.split(",")]
+    else:
+        return []
+
+def handle_key(event):
+    global show_title, player_x, bullets, game_over, last_shot_time
+
+    now = Date.now()
+
+    if show_title:
+        if event.key == " ":
+            show_title = False
+            reset_game()
+    elif game_over:
+        if event.key == "r":
+            reset_game()
+        elif event.key == "t":
+            return_to_title()
+    else:
+        if event.key == "ArrowLeft":
+            player_x = max(0, player_x - 10)
+        elif event.key == "ArrowRight":
+            player_x = min(360, player_x + 10)
+        elif event.key == " ":
+            if now - last_shot_time > 500:
+            
+                bullets.append([player_x + 17, player_y])
+                last_shot_time = now
+        draw()
+
+def reset_game():
+    global bullets, score, game_over, player_x
+    bullets = []
+    score = 0
+    player_x = 180
+    spawn_enemies()
+    draw()
+    game_over = False
+    show_title = False
+    score_saved = False
+    init_clouds()
+
+
+document.addEventListener("keydown", create_proxy(handle_key))
+
+async def game_loop():
+    while True:
+        if show_title: 
+            draw_title()
+        else:
+            if not game_over:
+                update_bullets()
+                update_enemies()
+                check_collision()
+                if all_enemies_defeated():
+                    await asyncio.sleep(1)
+                    advance_stage()
+                    spawn_enemies()
+            draw()
+        await asyncio.sleep(0.03)
+
+spawn_enemies()
+asyncio.ensure_future(game_loop())
+</py-script>
+</body>
+</html>
