@@ -57,9 +57,8 @@ project/
 
 ## 🎥 デモ動画 📸
 
-[![ゲームデモ](kuma_gekitai_demo.png)](kuma_gekitai_demo.mp4)
 <a href="kuma_gekitai_demo.mp4">
-  <img src="kuma_gekitai_demo.png" alt="ゲームデモ" width="300">
+  <img src="kuma_gekitai_demo.png" alt="ゲームデモ" width="200">
 </a>
 
 ---
