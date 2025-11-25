@@ -1,11 +1,11 @@
-# 🐻くま撃退ゲーム🎮（Python / JavaScript / HTML / CSS）
+# 🐻くま撃退ゲーム🎮（Python / HTML / CSS）
 
 ## 📘 ゲーム概要 🎯
 - プレイヤーを左右に動かして敵を攻撃、くまがプレイヤーまで迫るとゲームオーバー
 - スペースキーで銃弾を発射（0.5秒に1発）
 - 敵を全滅させるとステージが進行（ゲームオーバーにならないと終わらない）
 - スコアはランキングに保存され、上位5人まで表示
-Python / JavaScript / HTML / CSS を用いて開発。
+Python / HTML / CSS を用いて開発。
 HTML内に直接Pythonコードを記述し、Webブラウザ上で実行可能  
 Python / PyScript の学習目的で作成しました。
 
@@ -60,11 +60,11 @@ project/
 <a href="kuma_gekitai_demo.mp4">
   <img src="kuma_gekitai_demo.png" alt="ゲームデモ" width="200">
 </a>
-<a href="kuma_gekitai_demo2.mp4">
-  <img src="kuma_gekitai_demo.png" alt="ゲームデモ" width="200">
+<a href="kuma_gekitai_demo.mp4">
+  <img src="kuma_gekitai_demo2.png" alt="ゲームデモ" width="200">
 </a>
-<a href="kuma_gekitai_demo3.mp4">
-  <img src="kuma_gekitai_demo.png" alt="ゲームデモ" width="200">
+<a href="kuma_gekitai_demo.mp4">
+  <img src="kuma_gekitai_demo3.png" alt="ゲームデモ" width="200">
 </a>
 
 ---
